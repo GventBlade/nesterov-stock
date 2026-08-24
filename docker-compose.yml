@@ -1,0 +1,24 @@
+services:
+  web:
+    build: .
+    container_name: nesterov_warehouse
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --worker-class gevent --workers 3 --timeout 180 --bind 0.0.0.0:8000 NESTEROV.wsgi:application"
+    ports:
+      - "80:8000"
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+    env_file:
+      - .env
+    environment:
+      - DEBUG=1
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS}
+
+volumes:
+  media_volume:
+  static_volume:

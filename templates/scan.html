@@ -3,347 +3,506 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сканер</title>
+    <title>Сканер Складу | NESTEROV</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 10px; max-width: 480px; margin: 0 auto; background: #f4f6f8; }
-        .card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); margin-bottom: 10px; }
-        .form-group { margin-bottom: 8px; }
-        label { display: block; font-weight: 600; font-size: 12px; margin-bottom: 3px; color: #495057; }
-        input, select, textarea { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #ced4da; border-radius: 5px; box-sizing: border-box; }
-        textarea { height: 44px; resize: none; }
-        .row { display: flex; gap: 6px; }
-        .col { flex: 1; }
-        .price-group { display: flex; gap: 4px; }
-        .price-group input { flex: 2; }
-        .price-group select { flex: 1; padding: 4px; font-size: 12px; font-weight: bold; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px; background: #f0f2f5; }
+        .card { max-width: 520px; margin: 0 auto; background: white; padding: 16px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+        .nav-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+        .btn-nav { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 14px; }
+        .btn-blue { background: #007bff; color: white; }
+        .btn-gray { background: #6c757d; color: white; }
 
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; font-size: 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-nav { background: #007bff; text-decoration: none; display: block; text-align: center; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
+        #reader { width: 100%; min-height: 250px; background: #1a1a1a; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+        .cam-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+        .btn-cam { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .btn-cam-stop { background: #dc3545; }
+        .btn-cam-start { background: #28a745; }
+        .btn-torch { background: #ffc107; color: #000; display: none; }
+        .status-box { padding: 10px; border-radius: 8px; font-size: 13px; text-align: center; margin-bottom: 12px; font-weight: 600; }
 
-        .camera-wrapper { width: 100%; height: 160px; overflow: hidden; border-radius: 8px; background: #000; position: relative; margin-bottom: 8px; }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader video { object-fit: cover !important; height: 160px !important; }
+        .form-group { margin-bottom: 12px; }
+        label { font-size: 13px; font-weight: 600; color: #333; display: block; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        .status { padding: 10px; background: #e9ecef; border-radius: 5px; font-size: 13px; font-weight: bold; text-align: center; word-break: break-all; margin-top: 8px; }
-        .parsed-box { background: #e7f5ff; border: 1px solid #a5d8ff; padding: 8px; border-radius: 5px; font-size: 12px; margin-top: 8px; display: none; color: #004085; }
-        .btn-info-toggle { background: #17a2b8; font-size: 11px; padding: 6px 10px; width: auto; margin-top: 5px; border-radius: 4px; color: white; border: none; cursor: pointer; }
+        .photo-picker-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 8px 10px; }
+        .photo-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .btn-photo-action { flex: 1; padding: 9px 6px; border: 1px solid #adb5bd; border-radius: 6px; background: white; font-weight: 600; font-size: 13px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn-photo-action:active { background: #e9ecef; }
+        .photo-preview-text { font-size: 12px; color: #28a745; margin-top: 5px; font-weight: 600; display: none; }
 
-        .img-preview { max-width: 80px; max-height: 80px; margin-top: 4px; border-radius: 4px; display: none; object-fit: cover; }
+        .ai-panel { background: #f8f0fc; border: 1px solid #d0bfff; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+        .ai-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .ai-row:last-child { margin-bottom: 0; }
+        .ai-row label { margin: 0; cursor: pointer; color: #5f3dc4; font-size: 13px; font-weight: 600; }
+        .ai-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+
+        .btn-submit { width: 100%; padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+
+        #toastContainer { position: fixed; bottom: 12px; left: 12px; right: 12px; max-width: 520px; margin: 0 auto; z-index: 1000; pointer-events: none; }
+        .toast-item { background: #343a40; color: white; padding: 12px 16px; border-radius: 8px; margin-top: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
     </style>
 </head>
 <body>
 
-    <div id="login-section" class="card">
-        <h2>🔑 Вхід</h2>
-        <form id="login-form">
-            <div class="form-group"><label>Логін:</label><input type="text" id="username" required></div>
-            <div class="form-group"><label>Пароль:</label><input type="password" id="password" required></div>
-            <button type="submit">Увійти</button>
-        </form>
+<div class="card">
+    <div class="nav-bar">
+        <a href="/products/" class="btn-nav btn-blue">📋 База товарів / Склад</a>
+        {% if user.is_authenticated %}
+            <a href="/logout/" class="btn-nav btn-gray" style="flex: 0.4;">🚪 Вийти ({{ user.username }})</a>
+        {% else %}
+            <a href="/login/" class="btn-nav btn-gray" style="flex: 0.4;">🔑 Увійти</a>
+        {% endif %}
     </div>
 
-    <div id="scanner-section" style="display: none;">
-        <a href="/products/" class="btn-nav">📋 Відкрити список усіх товарів / Склад</a>
+    <div id="statusDiv" class="status-box" style="background:#e8f4fd; color:#0d6efd;">📷 Підготовка камери...</div>
 
-        <div class="card">
-            <div class="camera-wrapper">
-                <div id="reader"></div>
-            </div>
+    <div id="reader"></div>
 
-            <form id="scan-form">
-                <div class="form-group">
-                    <label>1. Комірка (напр. 101-А2):</label>
-                    <input type="text" id="location" placeholder="101-А2" autofocus autocomplete="off">
-                </div>
+    <div class="cam-bar">
+        <button type="button" id="camBtn" class="btn-cam btn-cam-stop" onclick="toggleCam()">⏹️ Зупинити камеру</button>
+        <button type="button" id="torchBtn" class="btn-cam btn-torch" onclick="toggleTorch()">🔦 Ліхтарик</button>
+    </div>
 
-                <div class="form-group">
-                    <label>2. Штрихкод / QR / Серійник:</label>
-                    <input type="text" id="barcode" required placeholder="Скануйте...">
-                </div>
-
-                <div class="form-group" style="background: #f8f9fa; padding: 6px; border-radius: 5px; border: 1px dashed #ced4da;">
-                    <label>3. 📷 Фото товару (опціонально):</label>
-                    <input type="file" id="image-input" accept="image/*" capture="environment">
-                    <img id="image-preview" class="img-preview" alt="Прев'ю">
-                </div>
-
-                <div class="form-group">
-                    <label>Назва товару:</label>
-                    <input type="text" id="name" placeholder="Назва">
-                </div>
-
-                <div class="form-group">
-                    <label>Примітка / Опис:</label>
-                    <textarea id="description" placeholder="Наприклад: Б/У, стан, комплектація..."></textarea>
-                </div>
-
-                <div class="row">
-                    <div class="col form-group">
-                        <label>Закуп:</label>
-                        <div class="price-group">
-                            <input type="number" step="0.01" id="purchase_price" placeholder="0.00">
-                            <select id="purchase_currency">
-                                <option value="EUR">EUR (€)</option>
-                                <option value="USD">USD ($)</option>
-                                <option value="UAH">UAH (₴)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col form-group">
-                        <label>Продаж:</label>
-                        <div class="price-group">
-                            <input type="number" step="0.01" id="selling_price" placeholder="0.00">
-                            <select id="selling_currency">
-                                <option value="UAH">UAH (₴)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="USD">USD ($)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Кількість:</label>
-                    <input type="number" id="quantity" value="1" min="1">
-                </div>
-
-                <button type="submit">Зберегти / Додати</button>
-            </form>
-
-            <button type="button" id="toggle-info-btn" class="btn-info-toggle" style="display:none;" onclick="toggleExtraInfo()">ℹ️ Деталі штрихкоду</button>
-            <div id="parsed-extra-box" class="parsed-box"></div>
+    <form id="scanForm" onsubmit="submitProductAsync(event)">
+        <div class="form-group">
+            <label>1. Комірка (напр. 101-А01):</label>
+            <input type="text" id="location_code" placeholder="101-А01" required>
         </div>
 
-        <button type="button" id="logout-btn" style="background:#6c757d; font-size:12px; margin-top: 5px;">Вийти</button>
-    </div>
+        <div class="form-group">
+            <label>2. Штрихкод / QR / DataMatrix / Артикул:</label>
+            <input type="text" id="barcode" placeholder="Скануйте або введіть..." required>
+        </div>
 
-    <div id="status" class="status">Очікування сканування...</div>
+        <!-- Фото 1: Товар -->
+        <div class="form-group">
+            <label>3. 📸 Фото 1: Товар / Запчастина:</label>
+            <div class="photo-picker-box">
+                <input type="file" id="image_cam" accept="image/*" capture="environment" style="display:none;" onchange="handleFileSelected(this, 'img_preview', 'image_file')">
+                <input type="file" id="image_file" accept="image/*" style="display:none;" onchange="handleFileSelected(this, 'img_preview', 'image_cam')">
 
-    <script>
-        const html5QrCode = new Html5Qrcode("reader");
-        const statusDiv = document.getElementById('status');
-        const parsedBox = document.getElementById('parsed-extra-box');
-        const toggleInfoBtn = document.getElementById('toggle-info-btn');
+                <div class="photo-actions">
+                    <button type="button" class="btn-photo-action" onclick="document.getElementById('image_cam').click()">📷 Зняти фото</button>
+                    <button type="button" class="btn-photo-action" onclick="document.getElementById('image_file').click()">📁 З галереї</button>
+                </div>
+                <div id="img_preview" class="photo-preview-text"></div>
+            </div>
+        </div>
 
-        const locationInput = document.getElementById('location');
-        const barcodeInput = document.getElementById('barcode');
-        const imageInput = document.getElementById('image-input');
-        const imagePreview = document.getElementById('image-preview');
-        const cellRegex = /^\d{3}-[A-Za-zА-Яа-я]\d$/;
+        <!-- Фото 2: Шильдик -->
+        <div class="form-group">
+            <label>4. 🏷️ Фото 2: Шильдик / Коробка / Маркування:</label>
+            <div class="photo-picker-box">
+                <input type="file" id="package_image_cam" accept="image/*" capture="environment" style="display:none;" onchange="handleFileSelected(this, 'pkg_preview', 'package_image_file')">
+                <input type="file" id="package_image_file" accept="image/*" style="display:none;" onchange="handleFileSelected(this, 'pkg_preview', 'package_image_cam')">
 
-        let isCooldown = false;
+                <div class="photo-actions">
+                    <button type="button" class="btn-photo-action" onclick="document.getElementById('package_image_cam').click()">📷 Зняти шильдик</button>
+                    <button type="button" class="btn-photo-action" onclick="document.getElementById('package_image_file').click()">📁 З галереї</button>
+                </div>
+                <div id="pkg_preview" class="photo-preview-text"></div>
+            </div>
+        </div>
 
-        imageInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                }
-                reader.readAsDataURL(file);
-            } else {
-                imagePreview.style.display = 'none';
+        <div class="ai-panel">
+            <div class="ai-row">
+                <label for="use_ai_barcode">🤖 Увімкнути ШІ для Штрихкоду</label>
+                <input type="checkbox" id="use_ai_barcode">
+            </div>
+            <div class="ai-row">
+                <label for="use_ai_image">🖼️ Увімкнути ШІ-парсинг Фото (Товар + Шильдик)</label>
+                <input type="checkbox" id="use_ai_image">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Назва товару (або авто-ШІ):</label>
+            <input type="text" id="name" placeholder="Наприклад: Плата керування Baxi Main Four">
+        </div>
+
+        <div class="form-group">
+            <label>Опис / Сумісність (або авто-ШІ):</label>
+            <textarea id="description" rows="2" placeholder="Особливості, сумісні котли..."></textarea>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label>Закуп:</label>
+                <input type="number" step="0.01" id="purchase_price" value="0.00">
+            </div>
+            <div class="form-group">
+                <label>Валюта:</label>
+                <select id="purchase_currency">
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="UAH">UAH (₴)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label>Продаж:</label>
+                <input type="number" step="0.01" id="selling_price" value="0.00">
+            </div>
+            <div class="form-group">
+                <label>Валюта:</label>
+                <select id="selling_currency">
+                    <option value="UAH">UAH (₴)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Кількість:</label>
+            <input type="number" id="quantity" value="1" min="1">
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn-submit">💾 Зберегти товар</button>
+    </form>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+let html5QrCode;
+let isCamOn = false;
+let isTorchOn = false;
+let isCooldown = false;
+let taskCounter = 0;
+
+const cellRegex = /^\d{1,3}-[А-ЯA-Z]\d{1,3}$/i;
+const statusDiv = document.getElementById('statusDiv');
+const camBtn = document.getElementById('camBtn');
+const torchBtn = document.getElementById('torchBtn');
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-        });
-
-        function playBeep() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                osc.frequency.value = 1200;
-                osc.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.1);
-            } catch(e){}
         }
+    }
+    return cookieValue;
+}
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('jwt_token')) showScanner();
-            else showLogin();
-        });
+function handleFileSelected(input, previewId, siblingId) {
+    const preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        preview.innerText = `✓ Обрано: ${input.files[0].name.substring(0, 25)}`;
+        preview.style.display = 'block';
+        document.getElementById(siblingId).value = '';
+    } else {
+        preview.style.display = 'none';
+    }
+}
 
-        function showLogin() {
-            document.getElementById('login-section').style.display = 'block';
-            document.getElementById('scanner-section').style.display = 'none';
-        }
+function playBeep() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1000, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+    } catch(e){}
+}
 
-        function showScanner() {
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('scanner-section').style.display = 'block';
-            startCamera();
-        }
+// Функція стиснення фото до розміру < 1 МБ зі збереженням максимальної чіткості
+function compressImageTo1MB(file, maxDimension = 2400, maxSizeBytes = 1024 * 1024) {
+    return new Promise((resolve) => {
+        if (!file || !file.type.startsWith('image/')) return resolve(file);
 
-        function startCamera() {
-            const config = {
-                fps: 20,
-                qrbox: { width: 160, height: 160 },
-                aspectRatio: 1.0,
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.QR_CODE,
-                    Html5QrcodeSupportedFormats.DATA_MATRIX,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.EAN_8
-                ],
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+        // Якщо файл і так менше 1 МБ — відправляємо оригінал
+        if (file.size <= maxSizeBytes) return resolve(file);
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Покроковий підбір якості до досягнення < 1MB
+                let quality = 0.88;
+                function exportBlob() {
+                    canvas.toBlob((blob) => {
+                        if (blob && blob.size > maxSizeBytes && quality > 0.4) {
+                            quality -= 0.12;
+                            exportBlob();
+                        } else if (blob) {
+                            const finalFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(finalFile);
+                        } else {
+                            resolve(file);
+                        }
+                    }, 'image/jpeg', quality);
+                }
+                exportBlob();
             };
+            img.onerror = () => resolve(file);
+        };
+        reader.onerror = () => resolve(file);
+    });
+}
 
-            html5QrCode.start(
+async function startCam() {
+    try {
+        const config = {
+            fps: 20,
+            qrbox: (w, h) => ({ width: Math.floor(w * 0.85), height: Math.floor(h * 0.65) }),
+            aspectRatio: 1.333334,
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
+            }
+        };
+
+        const onScanSuccess = (decodedText) => {
+            if (isCooldown) return;
+            isCooldown = true;
+            playBeep();
+            if (navigator.vibrate) navigator.vibrate(80);
+
+            const clean = decodedText.trim();
+            if (cellRegex.test(clean)) {
+                document.getElementById('location_code').value = clean.toUpperCase();
+                statusDiv.innerText = `📍 Зчитано комірку: ${clean}`;
+                document.getElementById('barcode').focus();
+            } else {
+                document.getElementById('barcode').value = clean;
+                statusDiv.innerText = `🔍 Зчитано код: ${clean}`;
+                document.getElementById('name').focus();
+            }
+            setTimeout(() => { isCooldown = false; }, 1200);
+        };
+
+        try {
+            await html5QrCode.start(
                 { facingMode: "environment" },
                 config,
-                (text) => {
-                    if (isCooldown) return;
-                    isCooldown = true;
-
-                    playBeep();
-                    if (navigator.vibrate) navigator.vibrate(80);
-
-                    const clean = text.trim();
-                    if (cellRegex.test(clean)) {
-                        locationInput.value = clean.toUpperCase();
-                        statusDiv.innerText = `📍 Зчитано комірку: ${clean}`;
-                        statusDiv.style.background = "#d1ecf1";
-                        statusDiv.style.color = "#0c5460";
-                        barcodeInput.focus();
-                    } else {
-                        barcodeInput.value = clean;
-                        statusDiv.innerText = `🔍 Зчитано код/QR: ${clean}`;
-                        statusDiv.style.background = "#d1ecf1";
-                        statusDiv.style.color = "#0c5460";
-                        document.getElementById('name').focus();
-                    }
-
-                    setTimeout(() => { isCooldown = false; }, 2000);
-                },
-                () => {}
+                onScanSuccess,
+                (err) => {}
             );
-        }
-
-        function toggleExtraInfo() {
-            if (parsedBox.style.display === 'none') {
-                parsedBox.style.display = 'block';
-                toggleInfoBtn.innerText = "🔼 Сховати деталі";
-            } else {
-                parsedBox.style.display = 'none';
-                toggleInfoBtn.innerText = "ℹ️ Деталі штрихкоду";
-            }
-        }
-
-        function formatParsedAttributes(extraInfo) {
-            if (!extraInfo) return '';
-            const attrs = extraInfo.parsed_attributes || {};
-            let html = '';
-
-            if (attrs.country) html += `<b>Країна:</b> ${attrs.country}<br>`;
-            if (attrs.prefix) html += `<b>Префікс GS1:</b> ${attrs.prefix}<br>`;
-            if (attrs.serial_number) html += `<b>Серійник:</b> ${attrs.serial_number}<br>`;
-            if (attrs.article_code) html += `<b>Артикул:</b> ${attrs.article_code}<br>`;
-            if (attrs.qr_type) html += `<b>Тип QR:</b> ${attrs.qr_type}<br>`;
-
-            if (!html && extraInfo.format) {
-                html = `<b>Формат:</b> ${extraInfo.format}`;
-            }
-            return html;
-        }
-
-        // ПОВНЕ ОЧИЩЕННЯ ФОРМИ
-        function resetForm() {
-            document.getElementById('barcode').value = '';
-            document.getElementById('name').value = '';
-            document.getElementById('description').value = '';
-            document.getElementById('purchase_price').value = '';
-            document.getElementById('selling_price').value = '';
-            document.getElementById('purchase_currency').value = 'EUR';
-            document.getElementById('selling_currency').value = 'UAH';
-            document.getElementById('quantity').value = '1';
-            imageInput.value = '';
-            imagePreview.style.display = 'none';
-            toggleInfoBtn.style.display = 'none';
-            parsedBox.style.display = 'none';
-            parsedBox.innerHTML = '';
-        }
-
-        document.getElementById('scan-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const token = localStorage.getItem('jwt_token');
-
-            const formData = new FormData();
-            formData.append('location_code', locationInput.value.trim());
-            formData.append('barcode', barcodeInput.value.trim());
-            formData.append('name', document.getElementById('name').value.trim());
-            formData.append('description', document.getElementById('description').value.trim());
-            formData.append('quantity', parseInt(document.getElementById('quantity').value) || 1);
-
-            if (document.getElementById('purchase_price').value) {
-                formData.append('purchase_price', document.getElementById('purchase_price').value);
-            }
-            formData.append('purchase_currency', document.getElementById('purchase_currency').value);
-
-            if (document.getElementById('selling_price').value) {
-                formData.append('selling_price', document.getElementById('selling_price').value);
-            }
-            formData.append('selling_currency', document.getElementById('selling_currency').value);
-
-            if (imageInput.files[0]) {
-                formData.append('image', imageInput.files[0]);
-            }
-
-            try {
-                const res = await fetch('/api/scan/', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-
-                if (res.ok) {
-                    const prod = await res.json();
-
-                    // Сповіщення про додавання
-                    statusDiv.innerText = `✅ Товар "${prod.name}" успішно додано! (Залишок: ${prod.quantity} шт.)`;
-                    statusDiv.style.background = "#d4edda";
-                    statusDiv.style.color = "#155724";
-
-                    // Очищаємо всі поля форми під новий товар
-                    resetForm();
-
-                    // Переводимо фокус на сканування нового товару
-                    barcodeInput.focus();
-                } else {
-                    const err = await res.json();
-                    statusDiv.innerText = `❌ Помилка збереження: ${JSON.stringify(err)}`;
-                    statusDiv.style.background = "#f8d7da";
-                    statusDiv.style.color = "#721c24";
+        } catch (e1) {
+            const cameras = await Html5Qrcode.getCameras();
+            if (cameras && cameras.length > 0) {
+                let backCam = cameras[0].id;
+                for (let c of cameras) {
+                    if (c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment') || c.label.toLowerCase().includes('зад')) {
+                        backCam = c.id;
+                        break;
+                    }
                 }
-            } catch (err) {
-                statusDiv.innerText = "❌ Помилка з'єднання з сервером";
-                statusDiv.style.background = "#f8d7da";
-                statusDiv.style.color = "#721c24";
+                await html5QrCode.start(backCam, config, onScanSuccess, (err) => {});
+            } else {
+                throw new Error("Камеру не знайдено або доступ заблоковано");
             }
-        });
+        }
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await fetch('/api/token/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value
-                })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                localStorage.setItem('jwt_token', data.access);
-                showScanner();
-            }
-        });
+        isCamOn = true;
+        camBtn.innerText = "⏹️ Зупинити камеру";
+        camBtn.className = "btn-cam btn-cam-stop";
+        statusDiv.innerText = "📷 Сканер активний (Всі формати)";
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('jwt_token');
-            showLogin();
-        });
-    </script>
+        try {
+            const caps = html5QrCode.getRunningTrackCapabilities();
+            if (caps && caps.torch) torchBtn.style.display = 'inline-block';
+        } catch(e){}
+
+    } catch (err) {
+        statusDiv.innerText = `⚠️ Помилка камери: ${err?.message || err}. Перевірте дозволи сайту.`;
+    }
+}
+
+async function stopCam() {
+    if (!isCamOn) return;
+    try {
+        await html5QrCode.stop();
+        isCamOn = false;
+        camBtn.innerText = "▶️ Увімкнути камеру";
+        camBtn.className = "btn-cam btn-cam-start";
+        torchBtn.style.display = 'none';
+        statusDiv.innerText = "Камеру зупинено";
+    } catch(e){}
+}
+
+function toggleCam() {
+    if (isCamOn) stopCam();
+    else startCam();
+}
+
+async function toggleTorch() {
+    try {
+        isTorchOn = !isTorchOn;
+        await html5QrCode.applyVideoConstraints({ advanced: [{ torch: isTorchOn }] });
+        torchBtn.innerText = isTorchOn ? "💡 Вимкнути світло" : "🔦 Ліхтарик";
+    } catch(e){}
+}
+
+async function submitProductAsync(e) {
+    e.preventDefault();
+
+    const barcode = document.getElementById('barcode').value.trim();
+    const locationCode = document.getElementById('location_code').value.trim().toUpperCase();
+    const name = document.getElementById('name').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const purchasePrice = document.getElementById('purchase_price').value;
+    const purchaseCurrency = document.getElementById('purchase_currency').value;
+    const sellingPrice = document.getElementById('selling_price').value;
+    const sellingCurrency = document.getElementById('selling_currency').value;
+    const quantity = document.getElementById('quantity').value;
+    const useAiBarcode = document.getElementById('use_ai_barcode').checked;
+    const useAiImage = document.getElementById('use_ai_image').checked;
+
+    const rawImgFile = document.getElementById('image_cam').files[0] || document.getElementById('image_file').files[0];
+    const rawPackageImgFile = document.getElementById('package_image_cam').files[0] || document.getElementById('package_image_file').files[0];
+
+    if (!barcode || !locationCode) {
+        alert("Комірка та штрихкод обов'язкові!");
+        return;
+    }
+
+    const taskId = ++taskCounter;
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.id = `toast-${taskId}`;
+    toast.className = 'toast-item';
+    toast.innerHTML = `<span>⏳ Оптимізація та збереження <b>${barcode}</b> (${locationCode})...</span><small style="opacity:0.75;">${(useAiBarcode || useAiImage) ? 'Gemini 3.6...' : 'Збереження...'}</small>`;
+    container.appendChild(toast);
+
+    // Миттєве очищення форми
+    document.getElementById('barcode').value = '';
+    document.getElementById('name').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('image_cam').value = '';
+    document.getElementById('image_file').value = '';
+    document.getElementById('package_image_cam').value = '';
+    document.getElementById('package_image_file').value = '';
+    document.getElementById('img_preview').style.display = 'none';
+    document.getElementById('pkg_preview').style.display = 'none';
+    document.getElementById('purchase_price').value = '0.00';
+    document.getElementById('selling_price').value = '0.00';
+    document.getElementById('quantity').value = '1';
+    document.getElementById('barcode').focus();
+
+    // Стиснення фото до < 1 МБ
+    const imgFile = rawImgFile ? await compressImageTo1MB(rawImgFile) : null;
+    const packageImgFile = rawPackageImgFile ? await compressImageTo1MB(rawPackageImgFile) : null;
+
+    const fd = new FormData();
+    fd.append('location_code', locationCode);
+    fd.append('barcode', barcode);
+    fd.append('name', name);
+    fd.append('description', description);
+    fd.append('purchase_price', purchasePrice);
+    fd.append('purchase_currency', purchaseCurrency);
+    fd.append('selling_price', sellingPrice);
+    fd.append('selling_currency', sellingCurrency);
+    fd.append('quantity', quantity);
+    fd.append('use_ai_barcode', useAiBarcode);
+    fd.append('use_ai_image', useAiImage);
+
+    if (imgFile) fd.append('image', imgFile);
+    if (packageImgFile) fd.append('package_image', packageImgFile);
+
+    fetch('/api/scan/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: fd
+    })
+    .then(async (res) => {
+        if (res.status === 401 || res.status === 403) {
+            window.location.href = '/login/?next=/';
+            return;
+        }
+
+        const data = await res.json();
+        const el = document.getElementById(`toast-${taskId}`);
+        if (!el) return;
+
+        if (res.ok) {
+            el.style.background = "#28a745";
+            let aiNotes = "";
+            if (data.ai_barcode_analysis?.brand) aiNotes += ` [${data.ai_barcode_analysis.brand}]`;
+            if (data.ai_image_analysis?.item_type) aiNotes += ` [${data.ai_image_analysis.item_type}]`;
+
+            el.innerHTML = `<span>✅ <b>${data.name}</b> (${data.quantity} шт.) збережено!${aiNotes}</span>`;
+            setTimeout(() => { el.remove(); }, 3500);
+        } else {
+            el.style.background = "#dc3545";
+            el.innerHTML = `<span>❌ Помилка ${barcode}: ${JSON.stringify(data)}</span>`;
+            setTimeout(() => { el.remove(); }, 6000);
+        }
+    })
+    .catch((err) => {
+        const el = document.getElementById(`toast-${taskId}`);
+        if (el) {
+            el.style.background = "#dc3545";
+            el.innerHTML = `<span>❌ Збій запиту ${barcode}: ${err.message}</span>`;
+            setTimeout(() => { el.remove(); }, 6000);
+        }
+    });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const allFormats = [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.AZTEC,
+        Html5QrcodeSupportedFormats.PDF_417,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODABAR
+    ];
+
+    html5QrCode = new Html5Qrcode("reader", {
+        formatsToSupport: allFormats,
+        verbose: false
+    });
+
+    startCam();
+});
+</script>
 </body>
 </html>

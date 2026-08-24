@@ -3,256 +3,507 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>База Товарів</title>
+    <title>База Складу | NESTEROV</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 10px; max-width: 600px; margin: 0 auto; background: #f4f6f8; }
-        .card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.06); margin-bottom: 10px; }
-        .btn-nav { background: #28a745; text-decoration: none; display: block; text-align: center; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; }
-        input, select, textarea { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #ced4da; border-radius: 5px; box-sizing: border-box; }
-        textarea { height: 44px; resize: none; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px; background: #f0f2f5; }
+        .card { max-width: 1280px; margin: 0 auto; background: white; padding: 16px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .nav-actions { display: flex; gap: 8px; }
+        .btn-top { padding: 10px 14px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; color: white; }
+        .btn-scan { background: #28a745; }
+        .btn-logout { background: #6c757d; }
+        .search-bar { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; margin-bottom: 14px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #e9ecef; text-align: left; vertical-align: middle; }
+        th { background: #f8f9fa; font-size: 13px; color: #495057; }
+        .cell-tag { background: #e3fafc; color: #0c8599; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block; }
+        .img-grid { display: flex; gap: 6px; }
+        .thumb-img { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #dee2e6; transition: transform 0.15s; }
+        .thumb-img:hover { transform: scale(1.06); }
+        .ai-badge { font-size: 11px; background: #f3f0ff; color: #5f3dc4; padding: 5px 8px; border-radius: 6px; margin-bottom: 4px; cursor: pointer; border: 1px solid #d0bfff; display: inline-block; transition: background 0.15s; }
+        .ai-badge:hover { background: #e5dbff; }
+        .ai-badge-photo { background: #e6fcf5; color: #0ca678; border-color: #96f2d7; }
+        .ai-badge-photo:hover { background: #c3fae8; }
+        .btn-action { padding: 6px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-edit { background: #ffc107; color: #212529; }
+        .btn-del { background: #dc3545; color: white; }
 
-        .products-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        .products-table th, .products-table td { border: 1px solid #dee2e6; padding: 6px; text-align: left; vertical-align: top; }
-        .btn-edit { background: #17a2b8; color: white; border: none; padding: 4px 6px; border-radius: 4px; cursor: pointer; }
-        .btn-info-sm { background: #e7f5ff; color: #004085; border: 1px solid #a5d8ff; padding: 2px 4px; font-size: 10px; border-radius: 3px; cursor: pointer; margin-top: 3px; display: inline-block; }
+        /* Modals */
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-box { background: white; padding: 20px; border-radius: 12px; max-width: 520px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; right: 14px; top: 14px; font-size: 24px; border: none; background: none; cursor: pointer; }
+        .img-hd { width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; }
 
-        .info-details { display: none; background: #e7f5ff; color: #004085; padding: 6px; font-size: 11px; border-radius: 4px; margin-top: 4px; }
+        .form-edit-group { margin-bottom: 10px; }
+        .form-edit-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 3px; color: #333; }
+        .form-edit-group input, .form-edit-group textarea, .form-edit-group select { width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .ai-info-row { margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
+        .ai-info-row strong { color: #495057; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: white; padding: 16px; border-radius: 8px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
-        
-        .price-group { display: flex; gap: 4px; }
-        .price-group input { flex: 2; }
-        .price-group select { flex: 1; }
-        .desc-text { font-size: 11px; color: #555; font-style: italic; margin-top: 2px; }
-        
-        /* Таблична мініатюра товару */
-        .prod-img { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-right: 6px; float: left; }
+        .ai-edit-box { background: #f8f0fc; border: 1px solid #e599f7; border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+
+        .photo-picker-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 6px 8px; }
+        .photo-actions { display: flex; gap: 6px; margin-top: 2px; }
+        .btn-photo-action { flex: 1; padding: 8px 4px; border: 1px solid #adb5bd; border-radius: 6px; background: white; font-weight: 600; font-size: 12px; cursor: pointer; text-align: center; }
+        .btn-photo-action:active { background: #e9ecef; }
+        .photo-preview-text { font-size: 11px; color: #28a745; margin-top: 4px; font-weight: 600; display: none; }
     </style>
 </head>
 <body>
 
-    <a href="/" class="btn-nav">⬅️ Повернутися до сканера</a>
-
-    <div class="card">
-        <h3>📋 База Товарів на Складі</h3>
-        <input type="text" id="search" placeholder="🔍 Пошук за назвою, ШК, коміркою...">
-        
-        <div id="table-container">Завантаження...</div>
-    </div>
-
-    <!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <h3>✏️ Редагувати товар</h3>
-            <form id="edit-form">
-                <input type="hidden" id="edit-id">
-                
-                <!-- 📸 Фото у модалці -->
-                <div style="margin-bottom:8px; background:#f8f9fa; padding:6px; border-radius:5px;">
-                    <label>Змінити фото товару:</label>
-                    <input type="file" id="edit-image" accept="image/*" capture="environment">
-                    <img id="edit-img-preview" style="max-width:70px; max-height:70px; display:none; margin-top:5px; border-radius:4px;">
-                </div>
-
-                <div style="margin-bottom:8px;"><label>Назва:</label><input type="text" id="edit-name" required></div>
-                <div style="margin-bottom:8px;"><label>Примітка / Опис:</label><textarea id="edit-description"></textarea></div>
-                <div style="margin-bottom:8px;"><label>Штрихкод:</label><input type="text" id="edit-barcode" required></div>
-                <div style="margin-bottom:8px;"><label>Комірка:</label><input type="text" id="edit-location"></div>
-                
-                <div style="margin-bottom:8px;">
-                    <label>Закуп:</label>
-                    <div class="price-group">
-                        <input type="number" step="0.01" id="edit-p-price">
-                        <select id="edit-p-curr">
-                            <option value="EUR">EUR (€)</option>
-                            <option value="USD">USD ($)</option>
-                            <option value="UAH">UAH (₴)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="margin-bottom:8px;">
-                    <label>Продаж:</label>
-                    <div class="price-group">
-                        <input type="number" step="0.01" id="edit-s-price">
-                        <select id="edit-s-curr">
-                            <option value="UAH">UAH (₴)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="margin-bottom:8px;"><label>Кількість:</label><input type="number" id="edit-qty" min="0"></div>
-                <div style="display:flex; gap:8px; margin-top:12px;">
-                    <button type="submit" style="background:#28a745; color:white; border:none; padding:8px; flex:1; border-radius:4px;">Зберегти</button>
-                    <button type="button" onclick="closeModal()" style="background:#6c757d; color:white; border:none; padding:8px; flex:1; border-radius:4px;">Скасувати</button>
-                </div>
-            </form>
+<div class="card">
+    <div class="header-bar">
+        <h2 style="margin: 0;">📦 Склад: Котли та Запчастини</h2>
+        <div class="nav-actions">
+            <a href="/" class="btn-top btn-scan">➕ Сканер / Додати</a>
+            <a href="/logout/" class="btn-top btn-logout">🚪 Вийти</a>
         </div>
     </div>
 
-    <script>
-        const currSymbols = { 'EUR': '€', 'USD': '$', 'UAH': '₴' };
-        let searchTimeout;
+    <input type="text" id="searchField" class="search-bar" placeholder="🔍 Пошук за будь-якими даними: назва, артикул, ШК, сумісні котли, комірка, опис..." oninput="filterItems()">
 
-        window.addEventListener('DOMContentLoaded', () => loadProducts());
+    <div class="table-wrap">
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>Фото (Товар / Шильдик)</th>
+                    <th>Товар / Код</th>
+                    <th>Комірка</th>
+                    <th>ШІ-Аналіз (клік для деталей)</th>
+                    <th>Ціни</th>
+                    <th>К-сть</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody">
+                <tr><td colspan="7" style="text-align: center; padding: 20px;">⏳ Завантаження бази...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-        function formatParsedAttributes(extraInfo) {
-            if (!extraInfo) return '';
-            const attrs = extraInfo.parsed_attributes || {};
-            let html = '';
+<!-- HD Photo Modal -->
+<div id="photoModal" class="modal" onclick="closePhotoModal()">
+    <div class="modal-box" style="text-align:center;" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closePhotoModal()">&times;</button>
+        <h3 id="photoTitle" style="margin-top:0; font-size: 16px;"></h3>
+        <img id="photoTarget" class="img-hd" src="">
+    </div>
+</div>
 
-            if (attrs.country) html += `<b>Країна:</b> ${attrs.country}<br>`;
-            if (attrs.prefix) html += `<b>Префікс GS1:</b> ${attrs.prefix}<br>`;
-            if (attrs.serial_number) html += `<b>Серійник:</b> ${attrs.serial_number}<br>`;
-            if (attrs.article_code) html += `<b>Артикул:</b> ${attrs.article_code}<br>`;
-            
-            return html;
-        }
+<!-- AI Details Modal -->
+<div id="aiModal" class="modal" onclick="closeAiModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeAiModal()">&times;</button>
+        <h3 id="aiModalTitle" style="margin-top:0; color:#5f3dc4;">🤖 Детальний аналіз Gemini 3.6</h3>
+        <div id="aiModalContent" style="margin-top: 14px;"></div>
+    </div>
+</div>
 
-        async function loadProducts(q = '') {
-            const token = localStorage.getItem('jwt_token');
-            const container = document.getElementById('table-container');
+<!-- Edit Item Modal -->
+<div id="editModal" class="modal" onclick="closeEditModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        <h3 style="margin-top: 0;">✏️ Редагування товару</h3>
+        <form id="editItemForm" onsubmit="saveItemChanges(event)">
+            <input type="hidden" id="edit_id">
 
-            try {
-                const res = await fetch(`/api/products/?search=${encodeURIComponent(q)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            <div class="form-edit-group">
+                <label>Назва товару (Ваша назва):</label>
+                <input type="text" id="edit_name" required>
+            </div>
 
-                if (!res.ok) {
-                    container.innerHTML = "<span style='color:red;'>Помилка завантаження</span>";
-                    return;
-                }
+            <div class="form-edit-group">
+                <label>Штрихкод / QR / Артикул:</label>
+                <input type="text" id="edit_barcode" required>
+            </div>
 
-                const data = await res.json();
-                const items = data.results || data || [];
+            <div class="form-edit-group">
+                <label>Комірка (напр. 101-А01):</label>
+                <input type="text" id="edit_location" required>
+            </div>
 
-                if (items.length === 0) {
-                    container.innerHTML = "<i>База порожня</i>";
-                    return;
-                }
+            <div class="form-edit-group">
+                <label>Кількість (шт):</label>
+                <input type="number" id="edit_quantity" min="0" required>
+            </div>
 
-                let html = `
-                    <table class="products-table">
-                        <thead>
-                            <tr>
-                                <th>Товар / ШК</th>
-                                <th>Ціни</th>
-                                <th>К-сть</th>
-                                <th>Дії</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+            <!-- Блок ручного коригування даних ШІ -->
+            <div class="ai-edit-box">
+                <div style="font-size: 12px; font-weight: bold; color: #ae3ec9; margin-bottom: 6px;">🤖 Коригування даних ШІ (якщо визначило не те):</div>
+                <div class="grid-2">
+                    <div class="form-edit-group">
+                        <label>Бренд ШІ:</label>
+                        <input type="text" id="edit_ai_brand" placeholder="Напр: Ariston">
+                    </div>
+                    <div class="form-edit-group">
+                        <label>Артикул деталі за ШІ:</label>
+                        <input type="text" id="edit_ai_article" placeholder="Напр: 3301313">
+                    </div>
+                </div>
+                <div class="form-edit-group">
+                    <label>Повна назва / тип деталі за ШІ:</label>
+                    <input type="text" id="edit_ai_name" placeholder="Напр: Котел газовий Ariston Clas X 24 CF EU">
+                </div>
+                <div class="form-edit-group">
+                    <label>Сумісні моделі котлів (через кому):</label>
+                    <input type="text" id="edit_ai_models" placeholder="Baxi Eco 4s, Westen Pulsar...">
+                </div>
+                <button type="button" class="btn-action" style="background:#fa5252; color:white; width:100%; margin-top:4px;" onclick="clearAiAnalysis()">🗑️ Повністю видалити помилковий аналіз ШІ</button>
+            </div>
 
-                items.forEach(item => {
-                    const cleanInfo = formatParsedAttributes(item.parsed_extra_info);
-                    const loc = item.location ? item.location.code : '-';
+            <!-- Закупівля + Валюта -->
+            <div class="grid-2">
+                <div class="form-edit-group">
+                    <label>Ціна закупу:</label>
+                    <input type="number" step="0.01" id="edit_purchase_price">
+                </div>
+                <div class="form-edit-group">
+                    <label>Валюта закупу:</label>
+                    <select id="edit_purchase_currency">
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="UAH">UAH (₴)</option>
+                    </select>
+                </div>
+            </div>
 
-                    const pPrice = item.purchase_price ? `${item.purchase_price} ${currSymbols[item.purchase_currency] || item.purchase_currency}` : '-';
-                    const sPrice = item.selling_price ? `${item.selling_price} ${currSymbols[item.selling_currency] || item.selling_currency}` : '-';
+            <!-- Продаж + Валюта -->
+            <div class="grid-2">
+                <div class="form-edit-group">
+                    <label>Ціна продажу:</label>
+                    <input type="number" step="0.01" id="edit_selling_price">
+                </div>
+                <div class="form-edit-group">
+                    <label>Валюта продажу:</label>
+                    <select id="edit_selling_currency">
+                        <option value="UAH">UAH (₴)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                    </select>
+                </div>
+            </div>
 
-                    const descHtml = item.description ? `<div class="desc-text">💬 ${item.description}</div>` : '';
-                    const imgHtml = item.image ? `<img src="${item.image}" class="prod-img">` : '';
+            <div class="form-edit-group">
+                <label>Опис / Сумісність / Особливості:</label>
+                <textarea id="edit_description" rows="3"></textarea>
+            </div>
 
-                    html += `
-                        <tr>
-                            <td>
-                                ${imgHtml}
-                                <b>${item.name}</b><br>
-                                <small style="color:#6c757d;">${item.barcode}</small><br>
-                                ${descHtml}
-                                <small style="color:#28a745;">📍 Комірка: <b>${loc}</b></small><br>
-                                ${cleanInfo ? `<button class="btn-info-sm" onclick="toggleInfo(${item.id})">ℹ️ Інфо</button><div id="info-${item.id}" class="info-details">${cleanInfo}</div>` : ''}
-                            </td>
-                            <td><small>Закуп: <b>${pPrice}</b><br>Продаж: <b>${sPrice}</b></small></td>
-                            <td><b>${item.quantity}</b></td>
-                            <td>
-                                <button class="btn-edit" onclick="openModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">✏️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
+            <!-- Оновити Фото 1 (Товар) -->
+            <div class="form-edit-group">
+                <label>Оновити Фото 1 (Товар):</label>
+                <div class="photo-picker-box">
+                    <input type="file" id="edit_image_cam" accept="image/*" capture="environment" style="display:none;" onchange="handleEditFile(this, 'edit_img_prev', 'edit_image_file')">
+                    <input type="file" id="edit_image_file" accept="image/*" style="display:none;" onchange="handleEditFile(this, 'edit_img_prev', 'edit_image_cam')">
+                    <div class="photo-actions">
+                        <button type="button" class="btn-photo-action" onclick="document.getElementById('edit_image_cam').click()">📷 Зняти</button>
+                        <button type="button" class="btn-photo-action" onclick="document.getElementById('edit_image_file').click()">📁 Галерея</button>
+                    </div>
+                    <div id="edit_img_prev" class="photo-preview-text"></div>
+                </div>
+            </div>
 
-                html += `</tbody></table>`;
-                container.innerHTML = html;
-            } catch (err) {
-                container.innerHTML = "<span style='color:red;'>Помилка мережі</span>";
+            <!-- Оновити Фото 2 (Шильдик) -->
+            <div class="form-edit-group">
+                <label>Оновити Фото 2 (Шильдик):</label>
+                <div class="photo-picker-box">
+                    <input type="file" id="edit_package_image_cam" accept="image/*" capture="environment" style="display:none;" onchange="handleEditFile(this, 'edit_pkg_prev', 'edit_package_image_file')">
+                    <input type="file" id="edit_package_image_file" accept="image/*" style="display:none;" onchange="handleEditFile(this, 'edit_pkg_prev', 'edit_package_image_cam')">
+                    <div class="photo-actions">
+                        <button type="button" class="btn-photo-action" onclick="document.getElementById('edit_package_image_cam').click()">📷 Зняти</button>
+                        <button type="button" class="btn-photo-action" onclick="document.getElementById('edit_package_image_file').click()">📁 Галерея</button>
+                    </div>
+                    <div id="edit_pkg_prev" class="photo-preview-text"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-action btn-scan" style="width: 100%; padding: 12px; margin-top: 10px; font-size: 14px;">💾 Зберегти зміни</button>
+        </form>
+    </div>
+</div>
+
+<script>
+let productsData = [];
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
+    }
+    return cookieValue;
+}
 
-        function toggleInfo(id) {
-            const el = document.getElementById(`info-${id}`);
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+function handleEditFile(input, prevId, siblingId) {
+    const prev = document.getElementById(prevId);
+    if (input.files && input.files[0]) {
+        prev.innerText = `✓ Готово: ${input.files[0].name.substring(0, 20)}`;
+        prev.style.display = 'block';
+        document.getElementById(siblingId).value = '';
+    } else {
+        prev.style.display = 'none';
+    }
+}
+
+async function loadProducts() {
+    try {
+        const res = await fetch('/api/products/');
+        if (res.status === 401 || res.status === 403) {
+            window.location.href = '/login/?next=/products/';
+            return;
         }
+        const data = await res.json();
+        productsData = data.results || data;
+        renderTable(productsData);
+    } catch(err) {
+        document.getElementById('itemsBody').innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Помилка завантаження: ${err.message}</td></tr>`;
+    }
+}
 
-        document.getElementById('search').addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => loadProducts(e.target.value.trim()), 300);
+function renderTable(items) {
+    const tbody = document.getElementById('itemsBody');
+    if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#6c757d;">Товари не знайдено.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map(p => `
+        <tr>
+            <td>
+                <div class="img-grid">
+                    ${p.image ? `<img src="${p.image}" title="Фото товару" class="thumb-img" onclick="openPhoto('${p.image}', '${escapeQuotes(p.name)} (Товар)')">` : ''}
+                    ${p.package_image ? `<img src="${p.package_image}" title="Фото шильдика" class="thumb-img" style="border-color:#5f3dc4;" onclick="openPhoto('${p.package_image}', '${escapeQuotes(p.name)} (Шильдик)')">` : ''}
+                    ${!p.image && !p.package_image ? `<div style="width:55px;height:55px;background:#e9ecef;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6c757d;">Немає</div>` : ''}
+                </div>
+            </td>
+            <td>
+                <strong>${p.name}</strong><br>
+                <small style="color:#6c757d;">${p.barcode}</small>
+            </td>
+            <td><span class="cell-tag">📍 ${p.location?.code || '-'}</span></td>
+            <td>
+                ${p.ai_barcode_analysis?.brand || p.ai_barcode_analysis?.probable_name ? `
+                    <div class="ai-badge" onclick="openAiDetails(${p.id}, 'barcode')">
+                        🤖 <strong>ШК:</strong> ${p.ai_barcode_analysis.brand || ''} ${p.ai_barcode_analysis.article || ''} 🔍
+                    </div><br>` : ''}
+                ${p.ai_image_analysis?.item_type || p.ai_image_analysis?.brand ? `
+                    <div class="ai-badge ai-badge-photo" onclick="openAiDetails(${p.id}, 'image')">
+                        🖼️ <strong>Фото:</strong> ${p.ai_image_analysis.brand || ''} ${p.ai_image_analysis.item_type || ''} 🔍
+                    </div>` : ''}
+                ${!p.ai_barcode_analysis?.brand && !p.ai_barcode_analysis?.probable_name && !p.ai_image_analysis?.item_type && !p.ai_image_analysis?.brand ? `<small style="color:#adb5bd;">-</small>` : ''}
+            </td>
+            <td>
+                <small>З: ${p.purchase_price || 0} ${p.purchase_currency || 'EUR'}</small><br>
+                <strong>П: ${p.selling_price || 0} ${p.selling_currency || 'UAH'}</strong>
+            </td>
+            <td><strong style="font-size:16px;">${p.quantity}</strong> шт.</td>
+            <td>
+                <button class="btn-action btn-edit" onclick="openEdit(${p.id})">✏️</button>
+                <button class="btn-action btn-del" onclick="deleteItem(${p.id})">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function escapeQuotes(str) {
+    return (str || '').replace(/'/g, "\\'");
+}
+
+function filterItems() {
+    const q = document.getElementById('searchField').value.toLowerCase().trim();
+    if (!q) {
+        renderTable(productsData);
+        return;
+    }
+
+    const filtered = productsData.filter(p => {
+        const barcodeAi = JSON.stringify(p.ai_barcode_analysis || {}).toLowerCase();
+        const imageAi = JSON.stringify(p.ai_image_analysis || {}).toLowerCase();
+        const name = (p.name || '').toLowerCase();
+        const barcode = (p.barcode || '').toLowerCase();
+        const loc = (p.location?.code || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+
+        return name.includes(q) ||
+               barcode.includes(q) ||
+               loc.includes(q) ||
+               desc.includes(q) ||
+               barcodeAi.includes(q) ||
+               imageAi.includes(q);
+    });
+
+    renderTable(filtered);
+}
+
+function openPhoto(url, title) {
+    document.getElementById('photoTarget').src = url;
+    document.getElementById('photoTitle').innerText = title;
+    document.getElementById('photoModal').style.display = 'flex';
+}
+function closePhotoModal() {
+    document.getElementById('photoModal').style.display = 'none';
+}
+
+function openAiDetails(id, type) {
+    const p = productsData.find(x => x.id === id);
+    if (!p) return;
+
+    const data = type === 'barcode' ? p.ai_barcode_analysis : p.ai_image_analysis;
+    const title = type === 'barcode' ? `🤖 Аналіз штрихкоду: ${p.barcode}` : `🖼️ Візуальний аналіз фото: ${p.name}`;
+    document.getElementById('aiModalTitle').innerText = title;
+
+    let html = '';
+    if (data.brand) html += `<div class="ai-info-row"><strong>Бренд:</strong> ${data.brand}</div>`;
+    if (data.article) html += `<div class="ai-info-row"><strong>Артикул / Номер:</strong> ${data.article}</div>`;
+    if (data.item_type) html += `<div class="ai-info-row"><strong>Тип:</strong> ${data.item_type}</div>`;
+    if (data.probable_name) html += `<div class="ai-info-row"><strong>Повна назва:</strong> ${data.probable_name}</div>`;
+    if (data.recognized_text) html += `<div class="ai-info-row"><strong>Розпізнане маркування:</strong> ${data.recognized_text}</div>`;
+
+    if (data.compatible_models && Array.isArray(data.compatible_models) && data.compatible_models.length) {
+        html += `<div class="ai-info-row"><strong>Сумісні моделі котлів:</strong><br>• ${data.compatible_models.join('<br>• ')}</div>`;
+    }
+    if (data.notes) html += `<div class="ai-info-row"><strong>Примітки:</strong> ${data.notes}</div>`;
+    if (data.description) html += `<div class="ai-info-row"><strong>Опис:</strong> ${data.description}</div>`;
+
+    if (!html) html = '<p style="color:#6c757d;">Немає додаткових деталей.</p>';
+
+    document.getElementById('aiModalContent').innerHTML = html;
+    document.getElementById('aiModal').style.display = 'flex';
+}
+function closeAiModal() {
+    document.getElementById('aiModal').style.display = 'none';
+}
+
+function openEdit(id) {
+    const p = productsData.find(x => x.id === id);
+    if (!p) return;
+
+    document.getElementById('edit_id').value = p.id;
+    document.getElementById('edit_name').value = p.name || '';
+    document.getElementById('edit_barcode').value = p.barcode || '';
+    document.getElementById('edit_location').value = p.location?.code || '';
+    document.getElementById('edit_quantity').value = p.quantity || 1;
+
+    document.getElementById('edit_purchase_price').value = p.purchase_price || 0;
+    document.getElementById('edit_purchase_currency').value = p.purchase_currency || 'EUR';
+    document.getElementById('edit_selling_price').value = p.selling_price || 0;
+    document.getElementById('edit_selling_currency').value = p.selling_currency || 'UAH';
+
+    document.getElementById('edit_description').value = p.description || '';
+
+    // Підтягуємо існуючі дані ШІ
+    const aiData = p.ai_barcode_analysis || p.ai_image_analysis || {};
+    document.getElementById('edit_ai_brand').value = aiData.brand || '';
+    document.getElementById('edit_ai_article').value = aiData.article || '';
+    document.getElementById('edit_ai_name').value = aiData.probable_name || '';
+    document.getElementById('edit_ai_models').value = (aiData.compatible_models || []).join(', ');
+
+    document.getElementById('edit_image_cam').value = '';
+    document.getElementById('edit_image_file').value = '';
+    document.getElementById('edit_package_image_cam').value = '';
+    document.getElementById('edit_package_image_file').value = '';
+    document.getElementById('edit_img_prev').style.display = 'none';
+    document.getElementById('edit_pkg_prev').style.display = 'none';
+
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function clearAiAnalysis() {
+    document.getElementById('edit_ai_brand').value = '';
+    document.getElementById('edit_ai_article').value = '';
+    document.getElementById('edit_ai_name').value = '';
+    document.getElementById('edit_ai_models').value = '';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+async function saveItemChanges(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit_id').value;
+    const fd = new FormData();
+
+    fd.append('name', document.getElementById('edit_name').value.trim());
+    fd.append('barcode', document.getElementById('edit_barcode').value.trim());
+    fd.append('location_code', document.getElementById('edit_location').value.trim().toUpperCase());
+    fd.append('quantity', document.getElementById('edit_quantity').value);
+
+    fd.append('purchase_price', document.getElementById('edit_purchase_price').value);
+    fd.append('purchase_currency', document.getElementById('edit_purchase_currency').value);
+    fd.append('selling_price', document.getElementById('edit_selling_price').value);
+    fd.append('selling_currency', document.getElementById('edit_selling_currency').value);
+
+    fd.append('description', document.getElementById('edit_description').value.trim());
+
+    // Зберігаємо відкориговані вручну дані ШІ
+    const aiBrand = document.getElementById('edit_ai_brand').value.trim();
+    const aiArticle = document.getElementById('edit_ai_article').value.trim();
+    const aiName = document.getElementById('edit_ai_name').value.trim();
+    const aiModels = document.getElementById('edit_ai_models').value.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (aiBrand || aiName || aiArticle) {
+        const aiPayload = {
+            brand: aiBrand,
+            article: aiArticle,
+            probable_name: aiName,
+            compatible_models: aiModels
+        };
+        fd.append('ai_barcode_analysis', JSON.stringify(aiPayload));
+    } else {
+        // Якщо очистили — надсилаємо пустий об'єкт
+        fd.append('ai_barcode_analysis', JSON.stringify({}));
+        fd.append('ai_image_analysis', JSON.stringify({}));
+    }
+
+    const imgFile = document.getElementById('edit_image_cam').files[0] || document.getElementById('edit_image_file').files[0];
+    const packageImgFile = document.getElementById('edit_package_image_cam').files[0] || document.getElementById('edit_package_image_file').files[0];
+    if (imgFile) fd.append('image', imgFile);
+    if (packageImgFile) fd.append('package_image', packageImgFile);
+
+    try {
+        const res = await fetch(`/api/products/${id}/`, {
+            method: 'PATCH',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: fd
         });
 
-        function openModal(prod) {
-            document.getElementById('edit-id').value = prod.id;
-            document.getElementById('edit-name').value = prod.name;
-            document.getElementById('edit-description').value = prod.description || '';
-            document.getElementById('edit-barcode').value = prod.barcode;
-            document.getElementById('edit-location').value = prod.location ? prod.location.code : '';
-            document.getElementById('edit-p-price').value = prod.purchase_price || '';
-            document.getElementById('edit-p-curr').value = prod.purchase_currency || 'EUR';
-            document.getElementById('edit-s-price').value = prod.selling_price || '';
-            document.getElementById('edit-s-curr').value = prod.selling_currency || 'UAH';
-            document.getElementById('edit-qty').value = prod.quantity;
-            
-            const prevImg = document.getElementById('edit-img-preview');
-            if (prod.image) {
-                prevImg.src = prod.image;
-                prevImg.style.display = 'block';
-            } else {
-                prevImg.style.display = 'none';
-            }
-
-            document.getElementById('edit-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
-
-        document.getElementById('edit-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const token = localStorage.getItem('jwt_token');
-            const id = document.getElementById('edit-id').value;
-
-            const formData = new FormData();
-            formData.append('name', document.getElementById('edit-name').value);
-            formData.append('description', document.getElementById('edit-description').value);
-            formData.append('barcode', document.getElementById('edit-barcode').value);
-            formData.append('location_code', document.getElementById('edit-location').value.toUpperCase());
-            formData.append('purchase_currency', document.getElementById('edit-p-curr').value);
-            formData.append('selling_currency', document.getElementById('edit-s-curr').value);
-            formData.append('quantity', parseInt(document.getElementById('edit-qty').value) || 0);
-
-            if (document.getElementById('edit-p-price').value) {
-                formData.append('purchase_price', document.getElementById('edit-p-price').value);
-            }
-            if (document.getElementById('edit-s-price').value) {
-                formData.append('selling_price', document.getElementById('edit-s-price').value);
-            }
-
-            const imgFile = document.getElementById('edit-image').files[0];
-                if (imgFile) {
-                formData.append('image', imgFile);
-            }
-
-            await fetch(`/api/products/${id}/`, {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-
-            closeModal();
+        if (res.ok) {
+            closeEditModal();
             loadProducts();
+        } else {
+            alert("Помилка оновлення товару");
+        }
+    } catch(err) {
+        alert(`Помилка: ${err.message}`);
+    }
+}
+
+async function deleteItem(id) {
+    if (!confirm("Ви дійсно хочете видалити цей товар?")) return;
+    try {
+        const res = await fetch(`/api/products/${id}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
         });
-    </script>
+        if (res.ok) {
+            loadProducts();
+        }
+    } catch(err) {
+        alert(`Помилка видалення: ${err.message}`);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', loadProducts);
+</script>
 </body>
 </html>
