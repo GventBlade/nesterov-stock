@@ -41,10 +41,10 @@ def _call_gemini_api(payload: dict) -> dict:
             try:
                 response = requests.post(url, headers=headers, json=payload, timeout=45)
 
-                # Перемикання на наступний ключ при ліміті (429) або перевантаженні (503, 500, 502)
-                if response.status_code in [429, 500, 502, 503]:
+                # Перемикання на наступний ключ при ліміті, блокуванні або перевантаженні
+                if response.status_code in [400, 403, 429, 500, 502, 503]:
                     logger.warning(
-                        f"Модель {model} на ключі #{current_key_index + 1} повернула {response.status_code}. "
+                        f"Модель {model} на ключі #{current_key_index + 1} повернула код {response.status_code}. "
                         f"Перемикаємося на наступний ключ..."
                     )
                     current_key_index = (current_key_index + 1) % total_keys
@@ -53,12 +53,14 @@ def _call_gemini_api(payload: dict) -> dict:
 
                 if response.status_code != 200:
                     logger.error(f"Gemini API помилка {response.status_code}: {response.text}")
-                    break
+                    current_key_index = (current_key_index + 1) % total_keys
+                    continue
 
                 data = response.json()
                 candidates = data.get("candidates", [])
                 if not candidates:
-                    break
+                    current_key_index = (current_key_index + 1) % total_keys
+                    continue
 
                 text_content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
 
@@ -74,7 +76,7 @@ def _call_gemini_api(payload: dict) -> dict:
                 current_key_index = (current_key_index + 1) % total_keys
                 time.sleep(0.3)
 
-    logger.error("Усі запити до Gemini API вичерпано (всі ключі та моделі зайняті або недоступні).")
+    logger.error("Усі спроби до Gemini API вичерпано (всі ключі та резервні моделі зайняті або недоступні).")
     return {}
 
 
