@@ -15,8 +15,6 @@ API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
 # Повний каскад моделей у порядку пріоритету
 MODELS_CASCADE = [
-    "gemini-3.7-flash",
-    "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
