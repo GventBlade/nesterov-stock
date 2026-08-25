@@ -13,8 +13,14 @@ logger = logging.getLogger(__name__)
 raw_keys = os.getenv("GEMINI_API_KEYS") or os.getenv("GEMINI_API_KEY", "")
 API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
-PRIMARY_MODEL = "gemini-3.7-flash"
-FALLBACK_MODEL = "gemini-2.0-flash"
+# Повний каскад моделей у порядку пріоритету
+MODELS_CASCADE = [
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+]
 
 current_key_index = 0
 
@@ -28,24 +34,23 @@ def _call_gemini_api(payload: dict) -> dict:
     total_keys = len(API_KEYS)
     headers = {"Content-Type": "application/json"}
 
-    # Спершу пробуємо 3.7-flash, якщо перевантажена або вичерпана — переходимо на 2.0-flash
-    models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
-
-    for model in models_to_try:
+    # Проходимо по черзі по всіх моделях
+    for model in MODELS_CASCADE:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-        for _ in range(total_keys):
+        # Для поточної моделі пробуємо всі наявні API-ключі
+        for attempt_key in range(total_keys):
             active_key = API_KEYS[current_key_index]
             url = f"{api_url}?key={active_key}"
 
             try:
-                response = requests.post(url, headers=headers, json=payload, timeout=45)
+                response = requests.post(url, headers=headers, json=payload, timeout=40)
 
-                # Перемикання на наступний ключ при ліміті, блокуванні або перевантаженні
-                if response.status_code in [400, 403, 429, 500, 502, 503]:
+                # Перемикання на наступний ключ / модель при ліміті або збої
+                if response.status_code in [400, 403, 404, 429, 500, 502, 503]:
                     logger.warning(
-                        f"Модель {model} на ключі #{current_key_index + 1} повернула код {response.status_code}. "
-                        f"Перемикаємося на наступний ключ..."
+                        f"⚠️ Модель {model} на ключі #{current_key_index + 1} повернула статус {response.status_code}. "
+                        f"Спробуємо наступний варіант..."
                     )
                     current_key_index = (current_key_index + 1) % total_keys
                     time.sleep(0.3)
@@ -69,14 +74,17 @@ def _call_gemini_api(payload: dict) -> dict:
                     if text_content.startswith("json"):
                         text_content = text_content[4:].strip()
 
-                return json.loads(text_content) if text_content else {}
+                parsed_data = json.loads(text_content) if text_content else {}
+                if parsed_data:
+                    logger.info(f"✅ Успішно розпізнано через {model} (ключ #{current_key_index + 1})")
+                    return parsed_data
 
             except Exception as e:
                 logger.error(f"Помилка з'єднання з Gemini API ({model}, ключ #{current_key_index + 1}): {e}")
                 current_key_index = (current_key_index + 1) % total_keys
                 time.sleep(0.3)
 
-    logger.error("Усі спроби до Gemini API вичерпано (всі ключі та резервні моделі зайняті або недоступні).")
+    logger.error("❌ Усі спроби до Gemini API вичерпано (всі моделі та ключі зайняті або повернули помилку).")
     return {}
 
 

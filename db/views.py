@@ -14,6 +14,8 @@ from .utils import parse_barcode_extra_info
 from .ai_services import analyze_barcode_with_ai, analyze_product_images_with_ai
 from .serializers import ProductSerializer, ScanInputSerializer
 
+from django.contrib.auth import logout
+from django.shortcuts import redirect
 
 @login_required(login_url='/login/')
 def scan_page_view(request):
@@ -195,3 +197,8 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def post(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
+
+def custom_logout_view(request):
+    logout(request)
+    return redirect('login')

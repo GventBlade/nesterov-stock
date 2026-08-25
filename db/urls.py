@@ -9,7 +9,7 @@ from .views import (
     products_page_view,
     ScanStockView,
     ProductListView,
-    ProductDetailView
+    ProductDetailView, custom_logout_view
 )
 
 urlpatterns = [
@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/scan/', ScanStockView.as_view(), name='api_scan_stock'),
     path('api/products/', ProductListView.as_view(), name='api_product_list'),
     path('api/products/<int:pk>/', ProductDetailView.as_view(), name='api_product_detail'),
+    path('logout/', custom_logout_view, name='logout'),
 ]
