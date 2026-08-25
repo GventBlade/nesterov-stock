@@ -120,3 +120,15 @@ CSRF_TRUSTED_ORIGINS = [
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://sklad-17a.duckdns.org",
+    "http://sklad-17a.duckdns.org",
+]
+
+# Робота за Nginx / зворотним проксі (передає https)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Налаштування кук сесій та CSRF
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
