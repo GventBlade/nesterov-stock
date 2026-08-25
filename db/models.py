@@ -49,6 +49,20 @@ class Product(models.Model):
     name = models.CharField(max_length=255, verbose_name="Назва товару")
     description = models.TextField(blank=True, default="", verbose_name="Опис / Додаткова інформація")
 
+    # 🔹 Номенклатурна інформація (Виробник та Постачальник)
+    manufacturer_info = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name="Номенклатурна інформація виробника (Артикул / Партномер)"
+    )
+    supplier_info = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name="Номенклатурна інформація постачальника"
+    )
+
     # 🔹 Фото 1: Товар
     image = models.ImageField(upload_to='products/', null=True, blank=True, verbose_name="Фото товару")
 

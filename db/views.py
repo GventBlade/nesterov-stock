@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.db.models import F
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,8 +15,6 @@ from .utils import parse_barcode_extra_info
 from .ai_services import analyze_barcode_with_ai, analyze_product_images_with_ai
 from .serializers import ProductSerializer, ScanInputSerializer
 
-from django.contrib.auth import logout
-from django.shortcuts import redirect
 
 @login_required(login_url='/login/')
 def scan_page_view(request):
@@ -41,6 +40,8 @@ class ScanStockView(APIView):
         location_code = data.get('location_code')
         user_name = data.get('name', '').strip()
         user_description = data.get('description', '').strip()
+        manufacturer_info = data.get('manufacturer_info')
+        supplier_info = data.get('supplier_info')
         image_file = data.get('image')
         package_image_file = data.get('package_image')
         quantity = data.get('quantity', 1)
@@ -102,18 +103,25 @@ class ScanStockView(APIView):
 
         final_description = user_description or "\n\n".join(generated_desc_blocks)
 
+        # Автозаповнення артикулу виробника з ШІ, якщо поле не заповнено вручну
+        if not manufacturer_info:
+            manufacturer_info = ai_image_data.get("article") or ai_barcode_data.get("article") or None
+
         product = Product.objects.filter(barcode=barcode).first()
 
         if product:
-            # Оновлюємо назву тільки якщо користувач ввів нову
             if user_name:
                 product.name = user_name
 
-            # Оновлюємо опис
             if user_description:
                 product.description = user_description
             elif not product.description and final_description:
                 product.description = final_description
+
+            if manufacturer_info:
+                product.manufacturer_info = manufacturer_info
+            if supplier_info:
+                product.supplier_info = supplier_info
 
             if location_obj:
                 product.location = location_obj
@@ -130,7 +138,6 @@ class ScanStockView(APIView):
 
             product.parsed_extra_info = parsed_info or {}
 
-            # Перезаписуємо ШІ-аналіз новими даними або зберігаємо чинний
             if ai_barcode_data:
                 product.ai_barcode_analysis = ai_barcode_data
             if ai_image_data:
@@ -146,11 +153,12 @@ class ScanStockView(APIView):
                 or ai_barcode_data.get("probable_name")
                 or f"Товар {barcode}"
             )
-            # Передаємо гарантовані dict замість None
             product = Product.objects.create(
                 barcode=barcode,
                 name=final_name,
                 description=final_description,
+                manufacturer_info=manufacturer_info,
+                supplier_info=supplier_info,
                 image=image_file,
                 package_image=package_image_file,
                 quantity=quantity,
@@ -181,7 +189,10 @@ class ProductListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     filter_backends = [OrderingFilter, SearchFilter]
-    search_fields = ['name', 'barcode', 'description', 'location__code']
+    search_fields = [
+        'name', 'barcode', 'description', 'location__code',
+        'manufacturer_info', 'supplier_info'
+    ]
     ordering_fields = ['name', 'created_at', 'quantity']
     ordering = ['-created_at']
 

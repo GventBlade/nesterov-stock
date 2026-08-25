@@ -15,11 +15,15 @@ class ProductSerializer(serializers.ModelSerializer):
     location_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     image = serializers.ImageField(required=False, allow_null=True)
     package_image = serializers.ImageField(required=False, allow_null=True)
+    manufacturer_info = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    supplier_info = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Product
         fields = [
-            'id', 'barcode', 'name', 'description', 'image', 'package_image',
+            'id', 'barcode', 'name', 'description',
+            'manufacturer_info', 'supplier_info',
+            'image', 'package_image',
             'quantity', 'location', 'location_code',
             'purchase_price', 'purchase_currency',
             'selling_price', 'selling_currency',
@@ -28,7 +32,6 @@ class ProductSerializer(serializers.ModelSerializer):
         ]
 
     def to_internal_value(self, data):
-        # Дозволяє приймати JSON-поля ШІ навіть якщо вони передані як form-data рядок
         ret = super().to_internal_value(data)
 
         for field_name in ['ai_barcode_analysis', 'ai_image_analysis']:
@@ -58,6 +61,8 @@ class ScanInputSerializer(serializers.Serializer):
     location_code = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
+    manufacturer_info = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    supplier_info = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     image = serializers.ImageField(required=False, allow_null=True)
     package_image = serializers.ImageField(required=False, allow_null=True)
     quantity = serializers.IntegerField(default=1, min_value=1)

@@ -123,6 +123,17 @@
             <input type="text" id="name" placeholder="Наприклад: Плата керування Baxi Main Four">
         </div>
 
+        <div class="grid-2">
+            <div class="form-group">
+                <label>Номенклатура виробника:</label>
+                <input type="text" id="manufacturer_info" placeholder="Артикул/Партномер (напр. 710825300)">
+            </div>
+            <div class="form-group">
+                <label>Номенклатура постачальника:</label>
+                <input type="text" id="supplier_info" placeholder="Код постачальника або назва">
+            </div>
+        </div>
+
         <div class="form-group">
             <label>Опис / Сумісність (або авто-ШІ):</label>
             <textarea id="description" rows="2" placeholder="Особливості, сумісні котли..."></textarea>
@@ -222,12 +233,9 @@ function playBeep() {
     } catch(e){}
 }
 
-// Функція стиснення фото до розміру < 1 МБ зі збереженням максимальної чіткості
 function compressImageTo1MB(file, maxDimension = 2400, maxSizeBytes = 1024 * 1024) {
     return new Promise((resolve) => {
         if (!file || !file.type.startsWith('image/')) return resolve(file);
-
-        // Якщо файл і так менше 1 МБ — відправляємо оригінал
         if (file.size <= maxSizeBytes) return resolve(file);
 
         const reader = new FileReader();
@@ -255,7 +263,6 @@ function compressImageTo1MB(file, maxDimension = 2400, maxSizeBytes = 1024 * 102
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Покроковий підбір якості до досягнення < 1MB
                 let quality = 0.88;
                 function exportBlob() {
                     canvas.toBlob((blob) => {
@@ -380,6 +387,8 @@ async function submitProductAsync(e) {
     const barcode = document.getElementById('barcode').value.trim();
     const locationCode = document.getElementById('location_code').value.trim().toUpperCase();
     const name = document.getElementById('name').value.trim();
+    const manufacturerInfo = document.getElementById('manufacturer_info').value.trim();
+    const supplierInfo = document.getElementById('supplier_info').value.trim();
     const description = document.getElementById('description').value.trim();
     const purchasePrice = document.getElementById('purchase_price').value;
     const purchaseCurrency = document.getElementById('purchase_currency').value;
@@ -402,12 +411,14 @@ async function submitProductAsync(e) {
     const toast = document.createElement('div');
     toast.id = `toast-${taskId}`;
     toast.className = 'toast-item';
-    toast.innerHTML = `<span>⏳ Оптимізація та збереження <b>${barcode}</b> (${locationCode})...</span><small style="opacity:0.75;">${(useAiBarcode || useAiImage) ? 'Gemini 3.6...' : 'Збереження...'}</small>`;
+    toast.innerHTML = `<span>⏳ Оптимізація та збереження <b>${barcode}</b> (${locationCode})...</span><small style="opacity:0.75;">${(useAiBarcode || useAiImage) ? 'Обробка ШІ...' : 'Збереження...'}</small>`;
     container.appendChild(toast);
 
-    // Миттєве очищення форми
+    // Очищення форми
     document.getElementById('barcode').value = '';
     document.getElementById('name').value = '';
+    document.getElementById('manufacturer_info').value = '';
+    document.getElementById('supplier_info').value = '';
     document.getElementById('description').value = '';
     document.getElementById('image_cam').value = '';
     document.getElementById('image_file').value = '';
@@ -420,7 +431,6 @@ async function submitProductAsync(e) {
     document.getElementById('quantity').value = '1';
     document.getElementById('barcode').focus();
 
-    // Стиснення фото до < 1 МБ
     const imgFile = rawImgFile ? await compressImageTo1MB(rawImgFile) : null;
     const packageImgFile = rawPackageImgFile ? await compressImageTo1MB(rawPackageImgFile) : null;
 
@@ -428,6 +438,8 @@ async function submitProductAsync(e) {
     fd.append('location_code', locationCode);
     fd.append('barcode', barcode);
     fd.append('name', name);
+    if (manufacturerInfo) fd.append('manufacturer_info', manufacturerInfo);
+    if (supplierInfo) fd.append('supplier_info', supplierInfo);
     fd.append('description', description);
     fd.append('purchase_price', purchasePrice);
     fd.append('purchase_currency', purchaseCurrency);
