@@ -2,13 +2,21 @@
 Django settings for NESTEROV project.
 """
 
+import os
 from pathlib import Path
+
+# Спробуємо підтягнути python-dotenv, якщо він встановлений
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-#&p73+i@%o6)fe5=ms*4=e@+5r1v&@blt1uugy+-@0(4ww1(o='
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-#&p73+i@%o6)fe5=ms*4=e@+5r1v&@blt1uugy+-@0(4ww1(o=')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
     'sklad-17a.duckdns.org',
@@ -77,7 +85,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Kyiv'
 USE_I18N = True
 USE_TZ = True
 
@@ -108,7 +116,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# Налаштування безпеки та проксі для DuckDNS HTTPS
+# Налаштування безпеки та проксі для DuckDNS HTTPS / Nginx
 CSRF_TRUSTED_ORIGINS = [
     'https://sklad-17a.duckdns.org',
     'http://sklad-17a.duckdns.org',
@@ -121,14 +129,17 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://sklad-17a.duckdns.org",
-    "http://sklad-17a.duckdns.org",
-]
-
-# Робота за Nginx / зворотним проксі (передає https)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Налаштування кук сесій та CSRF
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# ==========================================
+# Email Settings (Резервне копіювання / сповіщення)
+# ==========================================
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'vanno1234567890@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+BACKUP_RECEIVER_EMAIL = os.getenv('BACKUP_RECEIVER_EMAIL', 'vanno1234567890@gmail.com')
