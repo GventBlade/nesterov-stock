@@ -39,7 +39,7 @@ def _call_gemini_api(payload: dict) -> dict:
             url = f"{api_url}?key={active_key}"
 
             try:
-                response = requests.post(url, headers=headers, json=payload, timeout=30)
+                response = requests.post(url, headers=headers, json=payload, timeout=35)
 
                 if response.status_code == 429:
                     logger.warning(
@@ -76,7 +76,7 @@ def _call_gemini_api(payload: dict) -> dict:
 
                 parsed_data = json.loads(text_content) if text_content else {}
                 if parsed_data:
-                    logger.info(f"✅ Успішно отримано дані через {model} (ключ #{current_key_index + 1})")
+                    logger.warning(f"✅ Успішно отримано дані через {model} (ключ #{current_key_index + 1})")
                     return parsed_data
 
             except Exception as e:
@@ -88,7 +88,7 @@ def _call_gemini_api(payload: dict) -> dict:
 
 
 def _search_teplomaster(query: str) -> dict:
-    """Прямий локальний пошук безпосередньо по teplo-master.com.ua без виклику веб-пошуковика Google"""
+    """Прямий локальний пошук безпосередньо по teplo-master.com.ua"""
     if not query:
         return {}
     try:
@@ -99,7 +99,7 @@ def _search_teplomaster(query: str) -> dict:
         }
         res = requests.get(search_url, params=params, headers=headers, timeout=5)
         if res.status_code == 200 and "product-thumb" in res.text:
-            logger.info(f"🔍 Знайдено збіг на teplo-master.com.ua для запиту '{query}'")
+            logger.warning(f"🔍 Знайдено збіг на teplo-master.com.ua для запиту '{query}'")
             return {"site_context": res.text[:8000]}
     except Exception as e:
         logger.warning(f"Прямий запит до teplo-master пропущено: {e}")
@@ -128,23 +128,34 @@ def analyze_barcode_with_ai(barcode: str) -> dict:
     direct_match = _search_teplomaster(barcode)
     raw_html_hint = direct_match.get("site_context", "")
 
+    if raw_html_hint:
+        logger.warning(f"📍 [ДЖЕРЕЛО]: Знайдено прямо на teplo-master.com.ua для '{barcode}'")
+    else:
+        logger.warning(f"📍 [ДЖЕРЕЛО]: teplo-master не дав збігу. Внутрішня база ШІ для '{barcode}'")
+
     prompt = f"""
     Ти провідний експерт бази опалювальної техніки (газові, електричні котли та комплектуючі: плати, клапани, датчики, теплообмінники, насоси).
     Штрихкод або артикул товару: "{barcode}".
 
     {f"Дані з каталогу teplo-master: {raw_html_hint}" if raw_html_hint else ""}
 
-    Сформуй технічні дані про цей товар та поверни ВИКЛЮЧНО валідний JSON:
+    Сформуй технічні дані про цей товар.
+    ВАЖЛИВО:
+    1. У compatible_models вкажи сумісні котли (наприклад: "Roda Micra Duo CS24", "Romstal Habitat 20F / 25F").
+    2. У compatible_parts вкажи повні найменування сумісних запчастин, вузлів та кодів взаємозамінних аналогів (наприклад: "Теплообмінник Roda Micra Duo CS24 (515001943)", "Теплообмінник Romstal Habitat 20F (515001943)").
+
+    Поверни ВИКЛЮЧНО валідний JSON:
     {{
-        "brand": "Бренд (Baxi, Vaillant, Ferroli, Ariston, Bosch тощо)",
+        "brand": "Бренд (Baxi, Vaillant, Ferroli, Ariston, Roda, Valmex тощо)",
         "article": "Заводський артикул / код",
         "category": "Газовий котел | Електричний котел | Запчастина котла",
-        "item_type": "Тип деталі (напр. Плата керування, Газовий клапан, Вторинний теплообмінник)",
-        "probable_name": "Повна назва українською мовою з брендом і серією",
+        "item_type": "Тип деталі (напр. Первинний теплообмінник, Плата керування, Газовий клапан)",
+        "probable_name": "Повна комерційна назва українською мовою з брендом і кодом",
         "compatible_models": ["Список сумісних моделей котлів"],
-        "description": "Технічний опис: призначення, характеристики, сумісність"
+        "compatible_parts": ["Список сумісних запчастин, вузлів та кодів аналогів"],
+        "description": "Технічний опис: призначення, розміри/матеріал, підключення, технічні параметри"
     }}
-    Тільки чистий JSON без пояснень.
+    Тільки чистий JSON.
     """
 
     payload = {
@@ -156,7 +167,10 @@ def analyze_barcode_with_ai(barcode: str) -> dict:
         }
     }
 
-    return _call_gemini_api(payload)
+    res = _call_gemini_api(payload)
+    if res:
+        res["source"] = "teplo-master.com.ua" if raw_html_hint else "Внутрішня база знань Gemini"
+    return res
 
 
 def analyze_product_images_with_ai(image_file=None, package_image_file=None) -> dict:
@@ -183,23 +197,31 @@ def analyze_product_images_with_ai(image_file=None, package_image_file=None) -> 
             })
 
         prompt = """
-        Ти сервісний інженер опалювального обладнання.
-        Завдання:
-        1. Зчитай маркування, заводський артикул, логотип та написи на шильдику чи заводській коробці.
-        2. Визнач деталь, її бренд, артикул та сумісні моделі газових/електричних котлів.
+        Ти провідний сервісний інженер опалювального обладнання.
+        Твоя база обслуговує газові та електричні котли, а також комплектуючі (теплообмінники, плати, клапани, насоси, датчики).
 
-        Поверни ВИКЛЮЧНО JSON:
+        ЗАВДАННЯ:
+        1. Зчитай маркування, заводський артикул, бренд, назви на шильдику чи упаковці.
+        2. Якщо це ЗАПЧАСТИНА (наприклад, теплообмінник, газовий клапан, плата):
+           - У "compatible_models" перелічи всі сумісні моделі газових/електричних котлів.
+           - У "compatible_parts" перелічи повні назви сумісних запчастин, вузлів та коди взаємозамінних аналогів з артикулами.
+        3. Якщо це ЦІЛИЙ КОТЕЛ:
+           - У "compatible_models" вкажи модифікації цієї лінійки.
+           - "compatible_parts" залиш порожнім масивом [].
+
+        Поверни ВИКЛЮЧНО валідний JSON у форматі:
         {
             "brand": "Бренд",
             "article": "Заводський артикул / партномер",
             "category": "Газовий котел | Електричний котел | Запчастина котла",
             "item_type": "Тип деталі або котла",
-            "probable_name": "Повна комерційна назва українською мовою",
+            "probable_name": "Повна комерційна назва українською мовою з брендом і кодом",
             "compatible_models": ["Список сумісних моделей котлів"],
-            "recognized_text": "Розпізнаний текст з маркування",
-            "description": "Технічний опис: призначення, ключові параметри"
+            "compatible_parts": ["Список сумісних запчастин, вузлів та кодів-аналогів"],
+            "recognized_text": "Увесь розпізнаний текст з маркування/наклейки",
+            "description": "Детальний технічний опис: призначення деталі, основні характеристики (розміри, матеріал, тип з'єднання, потужність)"
         }
-        Тільки чистий JSON без форматування.
+        Тільки чистий JSON.
         """
         parts.append({"text": prompt})
 
@@ -212,7 +234,10 @@ def analyze_product_images_with_ai(image_file=None, package_image_file=None) -> 
             }
         }
 
-        return _call_gemini_api(payload)
+        res = _call_gemini_api(payload)
+        if res:
+            res["source"] = "Візуальний аналіз фото (ШІ)"
+        return res
     except Exception as e:
         logger.error(f"Помилка аналізу зображень: {e}")
         return {}

@@ -64,7 +64,7 @@
         </div>
     </div>
 
-    <input type="text" id="searchField" class="search-bar" placeholder="🔍 Пошук: назва, артикул виробника, постачальник, ШК, сумісні котли, комірка..." oninput="filterItems()">
+    <input type="text" id="searchField" class="search-bar" placeholder="🔍 Пошук: назва, артикул виробника, постачальник, ШК, сумісні котли, запчастини, комірка..." oninput="filterItems()">
 
     <div class="table-wrap">
         <table id="itemsTable">
@@ -149,20 +149,24 @@
                 <div class="grid-2">
                     <div class="form-edit-group">
                         <label>Бренд ШІ:</label>
-                        <input type="text" id="edit_ai_brand" placeholder="Напр: Ariston">
+                        <input type="text" id="edit_ai_brand" placeholder="Напр: Roda / Valmex">
                     </div>
                     <div class="form-edit-group">
                         <label>Артикул деталі за ШІ:</label>
-                        <input type="text" id="edit_ai_article" placeholder="Напр: 3301313">
+                        <input type="text" id="edit_ai_article" placeholder="Напр: 515001943">
                     </div>
                 </div>
                 <div class="form-edit-group">
                     <label>Повна назва / тип деталі за ШІ:</label>
-                    <input type="text" id="edit_ai_name" placeholder="Напр: Котел газовий Ariston Clas X 24 CF EU">
+                    <input type="text" id="edit_ai_name" placeholder="Напр: Теплообмінник бітермічний Roda Micra Duo CS24">
                 </div>
                 <div class="form-edit-group">
                     <label>Сумісні моделі котлів (через кому):</label>
-                    <input type="text" id="edit_ai_models" placeholder="Baxi Eco 4s, Westen Pulsar...">
+                    <input type="text" id="edit_ai_models" placeholder="Roda Micra Duo CS24, Romstal Habitat 24 F...">
+                </div>
+                <div class="form-edit-group">
+                    <label>Сумісні запчастини / коди аналогів (через кому):</label>
+                    <input type="text" id="edit_ai_parts" placeholder="Теплообмінник Roda (515001943), Romstal (515001943)...">
                 </div>
                 <button type="button" class="btn-action" style="background:#fa5252; color:white; width:100%; margin-top:4px;" onclick="clearAiAnalysis()">🗑️ Повністю видалити аналіз ШІ</button>
             </div>
@@ -376,6 +380,7 @@ function openAiDetails(id, type) {
     document.getElementById('aiModalTitle').innerText = title;
 
     let html = '';
+    if (data.source) html += `<div class="ai-info-row" style="color:#2b8a3e; font-weight:bold;">📍 Джерело: ${data.source}</div>`;
     if (data.brand) html += `<div class="ai-info-row"><strong>Бренд:</strong> ${data.brand}</div>`;
     if (data.article) html += `<div class="ai-info-row"><strong>Артикул / Номер:</strong> ${data.article}</div>`;
     if (data.item_type) html += `<div class="ai-info-row"><strong>Тип:</strong> ${data.item_type}</div>`;
@@ -384,6 +389,9 @@ function openAiDetails(id, type) {
 
     if (data.compatible_models && Array.isArray(data.compatible_models) && data.compatible_models.length) {
         html += `<div class="ai-info-row"><strong>Сумісні моделі котлів:</strong><br>• ${data.compatible_models.join('<br>• ')}</div>`;
+    }
+    if (data.compatible_parts && Array.isArray(data.compatible_parts) && data.compatible_parts.length) {
+        html += `<div class="ai-info-row"><strong>Сумісні моделі запчастин / коди аналогів:</strong><br>• ${data.compatible_parts.join('<br>• ')}</div>`;
     }
     if (data.notes) html += `<div class="ai-info-row"><strong>Примітки:</strong> ${data.notes}</div>`;
     if (data.description) html += `<div class="ai-info-row"><strong>Опис:</strong> ${data.description}</div>`;
@@ -421,6 +429,7 @@ function openEdit(id) {
     document.getElementById('edit_ai_article').value = aiData.article || '';
     document.getElementById('edit_ai_name').value = aiData.probable_name || '';
     document.getElementById('edit_ai_models').value = (aiData.compatible_models || []).join(', ');
+    document.getElementById('edit_ai_parts').value = (aiData.compatible_parts || []).join(', ');
 
     document.getElementById('edit_image_cam').value = '';
     document.getElementById('edit_image_file').value = '';
@@ -437,6 +446,7 @@ function clearAiAnalysis() {
     document.getElementById('edit_ai_article').value = '';
     document.getElementById('edit_ai_name').value = '';
     document.getElementById('edit_ai_models').value = '';
+    document.getElementById('edit_ai_parts').value = '';
 }
 
 function closeEditModal() {
@@ -466,13 +476,15 @@ async function saveItemChanges(e) {
     const aiArticle = document.getElementById('edit_ai_article').value.trim();
     const aiName = document.getElementById('edit_ai_name').value.trim();
     const aiModels = document.getElementById('edit_ai_models').value.split(',').map(s => s.trim()).filter(Boolean);
+    const aiParts = document.getElementById('edit_ai_parts').value.split(',').map(s => s.trim()).filter(Boolean);
 
     if (aiBrand || aiName || aiArticle) {
         const aiPayload = {
             brand: aiBrand,
             article: aiArticle,
             probable_name: aiName,
-            compatible_models: aiModels
+            compatible_models: aiModels,
+            compatible_parts: aiParts
         };
         fd.append('ai_barcode_analysis', JSON.stringify(aiPayload));
     } else {
