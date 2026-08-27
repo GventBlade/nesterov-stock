@@ -34,15 +34,21 @@ class ProductSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         ret = super().to_internal_value(data)
 
+        # Парсимо JSON-поля ШІ тільки коли вони явно передаються у запиті (напр. з форми редагування)
         for field_name in ['ai_barcode_analysis', 'ai_image_analysis']:
-            val = data.get(field_name)
-            if isinstance(val, str):
-                try:
-                    ret[field_name] = json.loads(val)
-                except Exception:
-                    ret[field_name] = {}
-            elif isinstance(val, dict):
-                ret[field_name] = val
+            if field_name in data:
+                val = data.get(field_name)
+                if isinstance(val, str):
+                    val_clean = val.strip()
+                    if val_clean:
+                        try:
+                            ret[field_name] = json.loads(val_clean)
+                        except Exception:
+                            ret[field_name] = {}
+                    else:
+                        ret[field_name] = {}
+                elif isinstance(val, dict):
+                    ret[field_name] = val
         return ret
 
     def update(self, instance, validated_data):
@@ -53,6 +59,7 @@ class ProductSerializer(serializers.ModelSerializer):
                 instance.location = loc_obj
             else:
                 instance.location = None
+
         return super().update(instance, validated_data)
 
 
