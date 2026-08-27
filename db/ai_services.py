@@ -14,14 +14,13 @@ raw_keys = os.getenv("GEMINI_API_KEYS") or os.getenv("GEMINI_API_KEY", "")
 API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
 MODELS_CASCADE = [
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-2.0-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
 ]
 
 current_key_index = 0
 
-# Топ-5 профільних сайтів України з детальними схемами та описами котлів/запчастин
 TRUSTED_SITES = [
     "teplo-master.com.ua",
     "gazkomplekt.com.ua",
@@ -68,12 +67,18 @@ def _call_gemini_api(payload: dict) -> dict:
                     current_key_index = (current_key_index + 1) % total_keys
                     continue
 
-                text_content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+                parts = candidates[0].get("content", {}).get("parts", [])
+                text_content = ""
+                for part in parts:
+                    if "text" in part:
+                        text_content += part["text"]
 
-                if text_content.startswith("```"):
-                    text_content = text_content.strip("`")
-                    if text_content.startswith("json"):
-                        text_content = text_content[4:].strip()
+                text_content = text_content.strip()
+
+                # Надійне вилучення чистого JSON
+                json_match = re.search(r'\{.*\}', text_content, re.DOTALL)
+                if json_match:
+                    text_content = json_match.group(0)
 
                 parsed_data = json.loads(text_content) if text_content else {}
                 if parsed_data:
@@ -93,7 +98,7 @@ def _search_teplomaster(query: str) -> dict:
     if not query:
         return {}
     try:
-        search_url = "[https://teplo-master.com.ua/ua/search/](https://teplo-master.com.ua/ua/search/)"
+        search_url = "https://teplo-master.com.ua/ua/search/"
         params = {"search": query.strip()}
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -126,11 +131,9 @@ def analyze_barcode_with_ai(barcode: str) -> dict:
     if not barcode:
         return {}
 
-    # 1. Перевіряємо сайт teplo-master.com.ua
     direct_match = _search_teplomaster(barcode)
     raw_html_hint = direct_match.get("site_context", "")
 
-    # 2. Формуємо комбінований промт з ієрархією джерел
     prompt = f"""
     Ти головний експерт-технік бази опалювальної техніки (тільки ГАЗОВІ/ЕЛЕКТРИЧНІ котли та всі запчастини до них).
     Штрихкод або артикул товару: "{barcode}".
@@ -148,7 +151,7 @@ def analyze_barcode_with_ai(barcode: str) -> dict:
 
     Згенеруй максимально детальний і точний технічний опис: призначення, сумісні моделі котлів, технічні параметри (потужність, тиск, різьба/діаметр, напруга, кількість пластин якщо це теплообмінник).
 
-    Поверни ВИКЛЮЧНО валідний JSON:
+    Поверни ВИКЛЮЧНО валідний JSON у такому форматі:
     {{
         "brand": "Бренд виробника",
         "article": "Точний заводський артикул/код",
@@ -167,7 +170,6 @@ def analyze_barcode_with_ai(barcode: str) -> dict:
         }],
         "tools": [{"google_search": {}}],
         "generationConfig": {
-            "responseMimeType": "application/json",
             "temperature": 0.1
         }
     }
@@ -230,7 +232,6 @@ def analyze_product_images_with_ai(image_file=None, package_image_file=None) -> 
             }],
             "tools": [{"google_search": {}}],
             "generationConfig": {
-                "responseMimeType": "application/json",
                 "temperature": 0.1
             }
         }
